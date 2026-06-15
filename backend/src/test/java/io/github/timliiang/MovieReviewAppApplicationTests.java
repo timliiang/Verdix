@@ -1,4 +1,4 @@
-package test.java.io.github.timliiang;
+package io.github.timliiang;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
