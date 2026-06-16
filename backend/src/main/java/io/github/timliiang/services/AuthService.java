@@ -5,6 +5,7 @@ import io.github.timliiang.dto.LoginRequest;
 import io.github.timliiang.dto.RegisterRequest;
 import io.github.timliiang.entities.User;
 import io.github.timliiang.repositories.UserRepository;
+import io.github.timliiang.security.JwtProvider;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -31,7 +33,9 @@ public class AuthService {
 
         userRepository.save(user);
 
-        return new AuthResponse("token-placeholder", user.getUsername(),user.getEmail());
+        String token = jwtProvider.generateToken(user.getUsername());
+
+        return new AuthResponse(token, user.getUsername(),user.getEmail());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -42,6 +46,8 @@ public class AuthService {
             throw new RuntimeException("Invalid credentials");
         }
 
-        return new AuthResponse("token-placeholder", user.getUsername(),user.getEmail());
+        String token = jwtProvider.generateToken(user.getUsername());
+
+        return new AuthResponse(token, user.getUsername(),user.getEmail());
     }
 }
