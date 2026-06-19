@@ -47,7 +47,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test:4.0.5")
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	//testRuntimeOnly 'com.h2database:h2'
+	testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {
