@@ -7,6 +7,8 @@ import io.github.timliiang.entities.User;
 import io.github.timliiang.repositories.UserRepository;
 import io.github.timliiang.security.JwtProvider;
 import lombok.AllArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -49,5 +51,16 @@ public class AuthService {
         String token = jwtProvider.generateToken(user.getUsername());
 
         return new AuthResponse(token, user.getUsername());
+    }
+
+    public String getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) throw new RuntimeException("Authentication required");
+        return authentication.getName();
+    }
+
+    public Long getCurrentUserId() {
+        User user = userRepository.findByUsername(getCurrentUser()).orElseThrow();
+        return user.getId();
     }
 }
