@@ -2,7 +2,10 @@ package io.github.timliiang.services;
 
 import io.github.timliiang.dto.TmdbMovieDetail;
 import io.github.timliiang.dto.TmdbSearchResponse;
+import io.github.timliiang.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -31,6 +34,12 @@ public class TmdbClient {
         return restClient.get()
                 .uri("/movie/{id}", tmdbId)
                 .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
+                    if (response.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+                        throw new ResourceNotFoundException("TMDB id does not exist");
+                    }
+                    throw new RuntimeException("TMDB client error: " + response.getStatusCode());
+                })
                 .body(TmdbMovieDetail.class);
     }
 
