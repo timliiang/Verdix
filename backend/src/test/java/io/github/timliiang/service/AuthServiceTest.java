@@ -72,7 +72,6 @@ public class AuthServiceTest {
         assertNotNull(response);
         assertEquals("mocked.jwt.token", response.getToken());
         assertEquals("username", response.getUsername());
-        assertEquals("example@email.com", response.getEmail());
     }
 
     @Test

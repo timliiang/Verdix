@@ -55,8 +55,7 @@ public class AuthControllerTest {
         request.setEmail("example@email.com");
         request.setPassword("password");
 
-        AuthResponse mockResponse = new AuthResponse(
-                "mocked.jwt.token", "username", "example@email.com");
+        AuthResponse mockResponse = new AuthResponse("mocked.jwt.token", "username");
 
         when(authService.register(any())).thenReturn(mockResponse);
 
@@ -65,8 +64,7 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value("mocked.jwt.token"))
-                .andExpect(jsonPath("$.username").value("username"))
-                .andExpect(jsonPath("$.email").value("example@email.com"));
+                .andExpect(jsonPath("$.username").value("username"));
     }
 
     @Test
@@ -119,8 +117,7 @@ public class AuthControllerTest {
         request.setUsername("username");
         request.setPassword("password");
 
-        AuthResponse mockResponse = new AuthResponse(
-                "mocked.jwt.token", "username", "password");
+        AuthResponse mockResponse = new AuthResponse("mocked.jwt.token", "username");
 
         when(authService.login(any())).thenReturn(mockResponse);
 
