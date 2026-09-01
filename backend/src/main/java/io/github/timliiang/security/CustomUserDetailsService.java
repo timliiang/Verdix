@@ -1,7 +1,7 @@
 package io.github.timliiang.security;
 
-import io.github.timliiang.entities.User;
-import io.github.timliiang.repositories.UserRepository;
+import io.github.timliiang.user.User;
+import io.github.timliiang.user.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
