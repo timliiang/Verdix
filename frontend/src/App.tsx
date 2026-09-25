@@ -10,8 +10,8 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<HomePage />} />
           <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
             <Route path="/movies" element={<MoviePage />} />
             <Route path="/login" element={<LoginPage />} />
           </Route>
