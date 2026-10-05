@@ -106,8 +106,8 @@ The backend is organized **by feature** (`movie`, `review`, `user`, `security`) 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/timliiang/Movie-Review-App.git
-cd Movie-Review-App
+git clone https://github.com/timliiang/Verdix.git
+cd Verdix
 ```
 
 ### 2. Configure backend environment variables
