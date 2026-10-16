@@ -3,6 +3,20 @@
 /* Theme tokens for the v0-generated homepage (src/components/home, src/pages/HomePage.tsx). */
 @custom-variant dark (&:is(.dark *));
 
+/* Landing page tokens (src/pages/LandingPage.tsx). Monochrome night palette from DESIGN.md,
+   with one neon-green accent taken from the inspo photo.
+   Radius rule: buttons are full pills, photo panels 16px, posters 8px, list thumbnails 4px. */
+@theme {
+  --color-night: #0b0d0e;
+  --color-night-raised: #131617;
+  --color-paper: #eff1ee;
+  --color-fog: #a7adb0;
+  --color-haze: #858b8f;
+  --color-rule: #24292b;
+  --color-signal: #57e39b;
+  --font-display: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
