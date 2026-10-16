@@ -1,46 +1,28 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
-import { Bell, Bookmark, Clapperboard, Home, Menu, Moon, Search, Settings, Sparkles, Star, Sun, User, X } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { Bell, Menu, Moon, Search, Sun, User, X } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { initials } from "../../lib/format"
 import type { Theme } from "./useTheme"
 
+// The active link is derived from the URL, so the underline follows the page instead of always
+// marking Home.
 const navItems = [
-  { label: "Home", icon: Home, to: "/", active: true },
-  { label: "Watchlist", icon: Bookmark, to: "#", active: false },
-  { label: "Reviews", icon: Star, to: "#reviews", active: false },
-  { label: "Profile", icon: User, to: "#", active: false },
-  { label: "Settings", icon: Settings, to: "#", active: false },
+  { label: "Home", to: "/" },
+  { label: "Watchlist", to: "#" },
+  { label: "Reviews", to: "#reviews" },
+  { label: "Profile", to: "#" },
+  { label: "Settings", to: "#" },
 ]
 
 const iconButton =
   "grid size-10 shrink-0 place-items-center rounded-xl border border-hairline-soft bg-hairline text-slate transition-colors hover:text-ink"
 
-function LogoMark() {
-  return (
-    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-action text-on-action night:glow-action">
-      <Clapperboard className="size-5" strokeWidth={1.75} aria-hidden="true" />
-    </span>
-  )
-}
-
 function Wordmark() {
-  return <span className="text-heading-sm font-bold tracking-tight text-ink night:text-glow-action">Verdix</span>
-}
-
-function PremiumButton({ className }: { className?: string }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        "group inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-full border border-action/50 bg-action/15 px-4 text-button text-highlight transition",
-        "hover:bg-action hover:text-on-action night:hover:glow-action",
-        className,
-      )}
-    >
-      <Sparkles className="size-4 transition-transform group-hover:scale-110" strokeWidth={1.75} aria-hidden="true" />
-      Go Premium
-    </button>
+    <span translate="no" className="text-heading-sm font-bold tracking-tight text-ink night:text-glow-action">
+      Verdix
+    </span>
   )
 }
 
@@ -61,16 +43,21 @@ function SearchField({ className }: { className?: string }) {
 interface HomeNavProps {
   theme: Theme
   onToggleTheme: () => void
+  // "minimal" is for signed-out screens (log in, register): wordmark and theme toggle only, since
+  // links to Watchlist or Profile, notifications and an avatar mean nothing before you sign in.
+  variant?: "full" | "minimal"
 }
 
 // Structure follows the original v0 home nav: logo tile, five links with an active underline,
-// search, Premium, notifications, avatar, and a slide-out drawer below md; plus the theme toggle.
+// search, notifications, avatar, and a slide-out drawer below md; plus the theme toggle.
 // Breakpoints keep the bar on one line at every width:
 //   < sm  logo, toggle, bell, avatar, menu (search moves into the drawer)
 //   sm    + search icon        md  links replace the menu (tighter link padding until lg)
-//   lg    + Go Premium         xl  the search icon becomes a field
-export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
+//   lg         xl  the search icon becomes a field
+export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps) {
   const [open, setOpen] = useState(false)
+  const { pathname } = useLocation()
+  const full = variant === "full"
   const next = theme === "light" ? "dark" : "light"
 
   useEffect(() => {
@@ -84,39 +71,53 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
   // containing block for fixed descendants, which would clip "fixed inset-0" to the 64px bar.
   return (
     <>
+      {/* Skip link: hidden until focused, so keyboard users can jump past the nav. Pages give their
+          <main> id="main". */}
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-xl bg-action px-4 py-2 text-button text-on-action focus:not-sr-only focus:fixed focus:left-4 focus:top-3"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-40 border-b border-hairline-soft bg-canvas/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-page items-center gap-4 px-4 sm:px-6 lg:px-12">
           <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Verdix home">
-            <LogoMark />
             <Wordmark />
           </Link>
   
+          {full && (
           <nav aria-label="Primary" className="hidden items-center md:flex lg:ml-2 lg:gap-1">
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+              const active = item.to === pathname
+              return (
               <Link
                 key={item.label}
                 to={item.to}
-                aria-current={item.active ? "page" : undefined}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative rounded-lg px-2.5 py-2 text-link-sm transition-colors lg:px-3",
-                  item.active ? "text-ink" : "text-slate hover:text-ink",
+                  active ? "text-ink" : "text-slate hover:text-ink",
                 )}
               >
                 {item.label}
-                {item.active && (
+                {active && (
                   <span aria-hidden="true" className="absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-highlight night:glow-action lg:inset-x-3" />
                 )}
               </Link>
-            ))}
+              )
+            })}
           </nav>
+          )}
   
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <SearchField className="hidden w-48 xl:block [&:focus-within]:w-64" />
-            <button type="button" className={cn(iconButton, "hidden sm:grid xl:hidden")} aria-label="Search">
-              <Search className="size-5" strokeWidth={1.75} />
-            </button>
-  
-            <PremiumButton className="hidden lg:inline-flex" />
+            {full && (
+              <>
+                <SearchField className="hidden w-48 xl:block [&:focus-within]:w-64" />
+                <button type="button" className={cn(iconButton, "hidden sm:grid xl:hidden")} aria-label="Search">
+                  <Search className="size-5" strokeWidth={1.75} />
+                </button>
+              </>
+            )}
   
             <button
               type="button"
@@ -128,6 +129,8 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
               {theme === "light" ? <Moon className="size-5" strokeWidth={1.75} /> : <Sun className="size-5" strokeWidth={1.75} />}
             </button>
   
+            {full && (
+            <>
             <button type="button" className={cn(iconButton, "relative")} aria-label="Notifications, 1 unread">
               <Bell className="size-5" strokeWidth={1.75} />
               <span aria-hidden="true" className="absolute right-2.5 top-2.5 size-2 rounded-full bg-action ring-2 ring-hairline" />
@@ -138,7 +141,7 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
               aria-label="Your profile"
               className="grid size-10 shrink-0 place-items-center rounded-full bg-action text-button text-on-action ring-2 ring-transparent transition hover:ring-action/40"
             >
-              YO
+              <User />
             </button>
   
             <button
@@ -151,11 +154,13 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
             >
               <Menu className="size-5" strokeWidth={1.75} />
             </button>
+            </>
+            )}
           </div>
         </div>
       </header>
 
-      {open && (
+      {full && open && (
         <div id="home-drawer" className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <div className="absolute inset-0 bg-scrim/60 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
           <div className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-hairline-soft bg-hairline p-5">
@@ -168,7 +173,6 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
               <X className="size-5" strokeWidth={1.75} />
             </button>
             <div className="flex items-center gap-2.5 px-2 py-1">
-              <LogoMark />
               <Wordmark />
             </div>
             <SearchField className="mt-6 sm:hidden" />
@@ -178,18 +182,16 @@ export function HomeNav({ theme, onToggleTheme }: HomeNavProps) {
                   key={item.label}
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  aria-current={item.active ? "page" : undefined}
+                  aria-current={item.to === pathname ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-link-sm transition-colors",
-                    item.active ? "bg-action/15 text-highlight" : "text-slate hover:bg-surface-cool hover:text-ink",
+                    item.to === pathname ? "bg-action/15 text-highlight" : "text-slate hover:bg-surface-cool hover:text-ink",
                   )}
                 >
-                  <item.icon className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <PremiumButton className="mt-auto w-full justify-center" />
           </div>
         </div>
       )}
@@ -204,7 +206,6 @@ export function HomeFooter() {
       {/* Padding inside the max-width box, like every section, so the footer shares their left edge. */}
       <div className="mx-auto flex max-w-page flex-col gap-3 px-4 sm:px-6 lg:px-12">
         <span className="flex items-center gap-2.5">
-          <LogoMark />
           <Wordmark />
         </span>
         <p className="text-meta text-ash">Rank every film you watch.</p>

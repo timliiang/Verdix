@@ -37,7 +37,7 @@ export default function HomePage() {
 
       <HomeNav theme={theme} onToggleTheme={toggleTheme} />
 
-      <main>
+      <main id="main">
         {/* Hero: a contained photo card, as on "/". */}
         <div className="mx-auto max-w-page px-4 pt-6 sm:px-6 lg:px-12">
           <section
