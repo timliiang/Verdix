@@ -11,7 +11,7 @@ function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const onSubmit = async (data: LoginFormData) => {
+    const onSubmit = async (data: LoginFormData) => {   
         
     };
 
