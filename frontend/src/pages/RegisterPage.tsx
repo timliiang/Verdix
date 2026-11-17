@@ -1,9 +1,12 @@
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerSchema, type RegisterFormData } from '../schemas/authSchema';
+import { useAuth } from '../context/AuthContext';
+import { parseApiError } from '../api/apiError';
 import { AuthShell, AuthStage } from '../components/auth/AuthShell';
 import { TextField } from '../components/ui/TextField';
+import { FormError } from '../components/ui/FormError';
 import { buttonClass } from '../components/ui/buttonClass';
 import { rankedThisWeek } from '../lib/homeContent';
 
@@ -13,12 +16,27 @@ const posters = rankedThisWeek.slice(0, 3);
 const fan = ['-rotate-6 translate-y-4', 'z-10 -translate-y-2', 'rotate-6 translate-y-4'];
 
 function RegisterPage() {
-    const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
+    const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema)
     });
+    // Renamed: react-hook-form's register (above) binds inputs; this one creates the account.
+    const { register: registerUser } = useAuth();
+    const navigate = useNavigate();
 
-    // UI only: validation runs through the schema, submission is not wired up yet.
-    const onSubmit: SubmitHandler<RegisterFormData> = async () => {};
+    const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
+        try {
+            // The backend returns a token on register, so the user is logged in straight away
+            await registerUser(data);
+            // replace, so Back from the home page does not return to the sign-up form
+            navigate('/', { replace: true });
+        } catch (err) {
+            const { message, fieldErrors } = parseApiError(err);
+            const fields = (['username', 'email', 'password'] as const).filter((field) => fieldErrors[field]);
+            fields.forEach((field) => setError(field, { message: fieldErrors[field] }));
+            // root.* errors belong to the whole form and are cleared on the next submit
+            if (fields.length === 0) setError('root.server', { message });
+        }
+    };
 
     return (
         <AuthShell
@@ -83,7 +101,10 @@ function RegisterPage() {
                     error={errors.password?.message}
                     {...register('password')}
                 />
-                <button type="submit" className={buttonClass('primary', 'mt-2 w-full')}>Create account</button>
+                <FormError message={errors.root?.server?.message} />
+                <button type="submit" disabled={isSubmitting} className={buttonClass('primary', 'mt-2 w-full')}>
+                    {isSubmitting ? 'Creating account…' : 'Create account'}
+                </button>
             </form>
         </AuthShell>
     );

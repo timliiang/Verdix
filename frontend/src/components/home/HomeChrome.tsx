@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Bell, Menu, Moon, Search, Sun, User, X } from "lucide-react"
+import { Bell, Menu, Moon, Search, Sun, X } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { initials } from "../../lib/format"
+import { ProfileMenu } from "./ProfileMenu"
 import type { Theme } from "./useTheme"
 
 // The active link is derived from the URL, so the underline follows the page instead of always
-// marking Home.
+// marking Home. Routes other than "/" are not registered in App.tsx yet.
 const navItems = [
   { label: "Home", to: "/" },
-  { label: "Watchlist", to: "#" },
-  { label: "Reviews", to: "#reviews" },
-  { label: "Profile", to: "#" },
-  { label: "Settings", to: "#" },
+  { label: "Watchlist", to: "/watchlist" },
+  { label: "Reviews", to: "/reviews" },
+  { label: "Profile", to: "/profile" },
+  { label: "Settings", to: "/settings" },
 ]
 
-const iconButton =
-  "grid size-10 shrink-0 place-items-center rounded-xl border border-hairline-soft bg-hairline text-slate transition-colors hover:text-ink"
+// Hover lifts the tile 2px, warms its edge and nudges the icon up in size; colour only under reduced motion.
+const iconButton = cn(
+  "grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl border border-hairline-soft bg-hairline text-slate transition duration-200",
+  "hover:-translate-y-0.5 hover:border-highlight/40 hover:text-ink",
+  "[&_svg]:transition-transform [&_svg]:duration-200 hover:[&_svg]:scale-110",
+  "motion-reduce:hover:translate-y-0 motion-reduce:hover:[&_svg]:scale-100",
+)
 
 function Wordmark() {
   return (
@@ -95,14 +101,20 @@ export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative rounded-lg px-2.5 py-2 text-link-sm transition-colors lg:px-3",
+                  "group relative rounded-lg px-2.5 py-2 text-link-sm transition-colors lg:px-3",
                   active ? "text-ink" : "text-slate hover:text-ink",
                 )}
               >
                 {item.label}
-                {active && (
-                  <span aria-hidden="true" className="absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-highlight night:glow-action lg:inset-x-3" />
-                )}
+                {/* Always rendered: the active link shows it, others grow it from the centre on hover.
+                    Scaling a transform, not width, so the animation never triggers layout. */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-highlight transition-transform duration-300 ease-out motion-reduce:transition-none lg:inset-x-3",
+                    active ? "scale-x-100 night:glow-action" : "scale-x-0 opacity-60 group-hover:scale-x-100",
+                  )}
+                />
               </Link>
               )
             })}
@@ -113,9 +125,9 @@ export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps
             {full && (
               <>
                 <SearchField className="hidden w-48 xl:block [&:focus-within]:w-64" />
-                <button type="button" className={cn(iconButton, "hidden sm:grid xl:hidden")} aria-label="Search">
+                <Link to="/search" className={cn(iconButton, "hidden sm:grid xl:hidden")} aria-label="Search">
                   <Search className="size-5" strokeWidth={1.75} />
-                </button>
+                </Link>
               </>
             )}
   
@@ -131,18 +143,12 @@ export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps
   
             {full && (
             <>
-            <button type="button" className={cn(iconButton, "relative")} aria-label="Notifications, 1 unread">
+            <Link to="/notifications" className={cn(iconButton, "relative")} aria-label="Notifications, 1 unread">
               <Bell className="size-5" strokeWidth={1.75} />
               <span aria-hidden="true" className="absolute right-2.5 top-2.5 size-2 rounded-full bg-action ring-2 ring-hairline" />
-            </button>
-  
-            <button
-              type="button"
-              aria-label="Your profile"
-              className="grid size-10 shrink-0 place-items-center rounded-full bg-action text-button text-on-action ring-2 ring-transparent transition hover:ring-action/40"
-            >
-              <User />
-            </button>
+            </Link>
+
+            <ProfileMenu />
   
             <button
               type="button"
