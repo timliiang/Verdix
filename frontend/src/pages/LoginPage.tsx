@@ -20,7 +20,7 @@ function LoginPage() {
     const navigate = useNavigate();
 
     const onSubmit = async (data: LoginFormData) => {
-
+        
     };
 
     return (
