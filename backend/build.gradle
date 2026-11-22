@@ -5,8 +5,8 @@ plugins {
 }
 
 group = 'io.github.timliiang'
-version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+version = '0.0.1'
+description = 'Movie review app similar to Beli app'
 
 java {
 	toolchain {

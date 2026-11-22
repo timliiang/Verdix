@@ -198,7 +198,7 @@ html:has(#root > [data-theme="dark"]) {
 /* Radius scale for rounded-sm..4xl, derived from --radius (set on [data-theme] above, 0.625rem).
    Must stay inline: inline emits calc(var(--radius) * n) on each element, so --radius resolves in that
    element's scope. Non-inline would declare --radius-xl on :root, where --radius is undefined, and
-   every corner would compute to 0. Outside a [data-theme] page (e.g. layout/NavBar.tsx) --radius is
+   every corner would compute to 0. Outside a [data-theme] page (e.g. MoviePage.tsx) --radius is
    unset and these still compute to 0. */
 @theme inline {
   --radius-sm: calc(var(--radius) * 0.6);

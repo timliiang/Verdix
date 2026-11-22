@@ -3,8 +3,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginSchema, type LoginFormData } from '../schemas/authSchema';
 import { useAuth } from '../context/AuthContext';
+import { parseApiError } from '../api/apiError';
 import { AuthShell, AuthStage } from '../components/auth/AuthShell';
+import { useReturnTo } from '../components/auth/useReturnTo';
 import { TextField } from '../components/ui/TextField';
+import { FormError } from '../components/ui/FormError';
 import { buttonClass } from '../components/ui/buttonClass';
 import { Monogram } from '../components/home/HomeChrome';
 import { recentReviews } from '../lib/homeContent';
@@ -13,14 +16,25 @@ import { recentReviews } from '../lib/homeContent';
 const review = recentReviews[0];
 
 function LoginPage() {
-    const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+    const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema)
     });
     const { login } = useAuth();
     const navigate = useNavigate();
+    const returnTo = useReturnTo();
 
     const onSubmit = async (data: LoginFormData) => {
-
+        try {
+            await login(data);
+            // replace, so Back from the next page does not return to the login form
+            navigate(returnTo, { replace: true });
+        } catch (err) {
+            const { message, fieldErrors } = parseApiError(err);
+            const fields = (['username', 'password'] as const).filter((field) => fieldErrors[field]);
+            fields.forEach((field) => setError(field, { message: fieldErrors[field] }));
+            // root.* errors belong to the whole form and are cleared on the next submit
+            if (fields.length === 0) setError('root.server', { message });
+        }
     };
 
     return (
@@ -71,7 +85,10 @@ function LoginPage() {
                     error={errors.password?.message}
                     {...register('password')}
                 />
-                <button type="submit" className={buttonClass('primary', 'mt-2 w-full')}>Log in</button>
+                <FormError message={errors.root?.server?.message} />
+                <button type="submit" disabled={isSubmitting} className={buttonClass('primary', 'mt-2 w-full')}>
+                    {isSubmitting ? 'Logging in…' : 'Log in'}
+                </button>
             </form>
         </AuthShell>
     );
