@@ -5,6 +5,7 @@ import { loginSchema, type LoginFormData } from '../schemas/authSchema';
 import { useAuth } from '../context/AuthContext';
 import { parseApiError } from '../api/apiError';
 import { AuthShell, AuthStage } from '../components/auth/AuthShell';
+import { useReturnTo } from '../components/auth/useReturnTo';
 import { TextField } from '../components/ui/TextField';
 import { FormError } from '../components/ui/FormError';
 import { buttonClass } from '../components/ui/buttonClass';
@@ -20,12 +21,13 @@ function LoginPage() {
     });
     const { login } = useAuth();
     const navigate = useNavigate();
+    const returnTo = useReturnTo();
 
     const onSubmit = async (data: LoginFormData) => {
         try {
             await login(data);
-            // replace, so Back from the home page does not return to the login form
-            navigate('/', { replace: true });
+            // replace, so Back from the next page does not return to the login form
+            navigate(returnTo, { replace: true });
         } catch (err) {
             const { message, fieldErrors } = parseApiError(err);
             const fields = (['username', 'password'] as const).filter((field) => fieldErrors[field]);

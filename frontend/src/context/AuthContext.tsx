@@ -1,12 +1,12 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { LoginRequest, RegisterRequest } from '../types/Auth';
 import { login as loginApi, register as registerApi } from '../api/authApi';
+import { clearSession, loadSession, saveSession, type Session } from '../api/authStorage';
 
 export interface AuthContextType {
     username: string | null;
     token: string | null;
-    isLoading: boolean;
     register: (request: RegisterRequest) => Promise<void>;
     login: (request: LoginRequest) => Promise<void>;
     logout: () => void;
@@ -15,47 +15,31 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [username, setUsername] = useState<string | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    // Lazy initializer: storage is read before the first render, so a returning user is signed in
+    // from the start and the route guards never see a false "signed out".
+    const [session, setSession] = useState<Session | null>(loadSession);
 
-    useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        const storedUsername = localStorage.getItem('username');
-        if (storedToken && storedUsername) {
-            setToken(storedToken);
-            setUsername(storedUsername);
-        }
-        setIsLoading(false);
-    }, []);
+    const startSession = ({ token, username }: Session) => {
+        saveSession({ token, username });
+        setSession({ token, username });
+    }
 
     const login = async (request: LoginRequest) => {
-        const response = await loginApi(request);
-        setToken(response.token);
-        setUsername(response.username);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('username', response.username);
+        startSession(await loginApi(request));
     }
 
     const register = async (request: RegisterRequest) => {
-        const response = await registerApi(request);
-        setToken(response.token);
-        setUsername(response.username);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('username', response.username);
+        startSession(await registerApi(request));
     }
 
     const logout = () => {
-        setToken(null);
-        setUsername(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
+        clearSession();
+        setSession(null);
     }
 
     const value: AuthContextType = {
-        username,
-        token,
-        isLoading,
+        username: session?.username ?? null,
+        token: session?.token ?? null,
         login,
         register,
         logout
