@@ -17,6 +17,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<LandingPage />} />
+          {/* Public: browsing the catalog needs no account; ranking a film will. */}
+          <Route path="/movies" element={<MoviePage />} />
           <Route path="/styleguide" element={<StyleguidePage />} />
           {/* Signed-out only: a signed-in user is sent on instead of seeing these */}
           <Route element={<GuestRoute />}>

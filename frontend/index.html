@@ -5,6 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0d0e" />
+    <!-- Posters load from TMDB's CDN; opening the connection early saves a round trip on /movies.
+         No crossorigin: plain <img> requests cannot reuse a CORS-mode connection. -->
+    <link rel="preconnect" href="https://image.tmdb.org" />
     <title>Verdix</title>
   </head>
   <body>
