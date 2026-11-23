@@ -1,45 +1,23 @@
-import { genres, listOrder, movies } from "../lib/catalogData"
+import api from "./axios"
 import type { CatalogMovie, CatalogPage, CatalogQuery, Genre } from "../lib/catalogTypes"
 
-// TMDB's page size, kept so paging behaves the same once the backend is wired in.
+// TMDB's page size; the backend passes TMDB's pages through unchanged.
 export const CATALOG_PAGE_SIZE = 20
 
-// MOCK. Runs the query against the snapshot in lib/catalogData.ts. The real version is one call,
-// with the same CatalogPage coming back:
-//
-//   const { data } = await api.get<CatalogPage>("/movies/discover", {
-//     params: { list, sort, genres: genreIds.join(","), decade, page },
-//   })
-//
-// Async on purpose: callers already handle loading and failure, so the swap changes nothing else.
-async function queryMock({ list, sort, genreIds, decade, page }: CatalogQuery): Promise<CatalogPage> {
-  const byId = new Map(movies.map((m) => [m.tmdbId, m]))
-  let results = listOrder[list].map((id) => byId.get(id)).filter((m): m is CatalogMovie => m !== undefined)
-
-  if (genreIds.length > 0) {
-    results = results.filter((m) => genreIds.every((g) => m.genreIds.includes(g)))
-  }
-  if (decade !== null) {
-    results = results.filter((m) => {
-      const year = m.releaseDate ? Number(m.releaseDate.slice(0, 4)) : null
-      if (year === null) return false
-      return decade === 0 ? year < 1990 : year >= decade && year < decade + 10
-    })
-  }
-
-  // ISO dates compare correctly as strings; undated films go last either way.
-  const dateKey = (m: CatalogMovie) => m.releaseDate ?? ""
-  if (sort === "release_desc") results = [...results].sort((a, b) => dateKey(b).localeCompare(dateKey(a)))
-  if (sort === "release_asc") results = [...results].sort((a, b) => (dateKey(a) || "9999").localeCompare(dateKey(b) || "9999"))
-  if (sort === "title_asc") results = [...results].sort((a, b) => a.title.localeCompare(b.title))
-
-  const start = (page - 1) * CATALOG_PAGE_SIZE
-  return {
-    page,
-    totalPages: Math.max(1, Math.ceil(results.length / CATALOG_PAGE_SIZE)),
-    totalResults: results.length,
-    results: results.slice(start, start + CATALOG_PAGE_SIZE),
-  }
+// GET /api/movies/discover: the backend's cached proxy over TMDB's /discover/movie (public, no
+// account needed). Defaults and empty filters are left out (axios drops undefined params), so the
+// URL stays short and equal queries look equal to the server's cache.
+async function requestPage({ list, sort, genreIds, decade, page }: CatalogQuery): Promise<CatalogPage> {
+  const { data } = await api.get<CatalogPage>("/api/movies/discover", {
+    params: {
+      list,
+      sort,
+      genres: genreIds.length > 0 ? genreIds.join(",") : undefined,
+      decade: decade ?? undefined,
+      page,
+    },
+  })
+  return data
 }
 
 // One promise per distinct query and page. "Load more" refetches pages 1..n so a deep link like
@@ -51,7 +29,7 @@ function fetchCatalogPage(query: CatalogQuery): Promise<CatalogPage> {
   const key = JSON.stringify(query)
   let request = pageCache.get(key)
   if (!request) {
-    request = queryMock(query)
+    request = requestPage(query)
     request.catch(() => pageCache.delete(key))
     pageCache.set(key, request)
   }
@@ -77,7 +55,16 @@ export async function fetchCatalog(query: CatalogQuery): Promise<CatalogResult> 
   }
 }
 
-// MOCK. Will be GET /api/movies/genres (TMDB's /genre/movie/list, cached on the server).
-export async function fetchGenres(): Promise<Genre[]> {
-  return genres
+// TMDB's genre list, cached for a day on the server. Fetched once per page load: the promise is
+// kept, and dropped on failure so a later mount can try again.
+let genresRequest: Promise<Genre[]> | null = null
+
+export function fetchGenres(): Promise<Genre[]> {
+  if (!genresRequest) {
+    genresRequest = api.get<Genre[]>("/api/movies/genres").then((r) => r.data)
+    genresRequest.catch(() => {
+      genresRequest = null
+    })
+  }
+  return genresRequest
 }

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -40,6 +41,9 @@ public class SecurityConfig {
                                 "/v3/api-docs",
                                 "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // The public /movies catalog. GET only and these two paths only: search,
+                        // film details (which write to the movies table) and reviews stay signed-in.
+                        .requestMatchers(HttpMethod.GET, "/api/movies/discover", "/api/movies/genres").permitAll()
                         .anyRequest().authenticated())
                 // No token, or an expired/forged one, on a protected route: answer 401, not the
                 // default 403, so the client knows to sign in again rather than give up.

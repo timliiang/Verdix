@@ -1,5 +1,5 @@
-// Shapes for the movie catalog (/movies). They mirror the planned GET /api/movies/discover response,
-// so swapping the mock in api/catalogApi.ts for the real endpoint changes no component.
+// Shapes for the movie catalog (/movies). They mirror GET /api/movies/discover and /api/movies/genres
+// (backend movie/catalog: CatalogPage, CatalogMovie, CatalogGenre), so keep the two in step.
 
 // TMDB's ready-made lists. On the backend each becomes a preset of /discover/movie parameters.
 export type CatalogList = "popular" | "now_playing" | "upcoming" | "top_rated"
