@@ -1,5 +1,6 @@
 package io.github.timliiang.security;
 
+import io.github.timliiang.common.exception.ConflictException;
 import io.github.timliiang.security.dto.AuthResponse;
 import io.github.timliiang.security.dto.LoginRequest;
 import io.github.timliiang.security.dto.RegisterRequest;
@@ -9,6 +10,7 @@ import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -136,6 +138,62 @@ public class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.username").exists());
+    }
+
+    @Test
+    void login_shouldReturn401WhenCredentialsAreInvalid() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setUsername("username");
+        request.setPassword("wrong-password");
+
+        when(authService.login(any())).thenThrow(new BadCredentialsException("Invalid credentials"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid credentials"));
+    }
+
+    @Test
+    void register_shouldReturn409WhenUsernameIsTaken() throws Exception {
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername("username");
+        request.setEmail("example@email.com");
+        request.setPassword("password");
+
+        when(authService.register(any())).thenThrow(new ConflictException("Username is already in use"));
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Username is already in use"));
+    }
+
+    // A bug must not reach the user as a 400 carrying internal details.
+    @Test
+    void unexpectedException_shouldReturnGeneric500() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setUsername("username");
+        request.setPassword("password");
+
+        when(authService.login(any())).thenThrow(new IllegalStateException("connection pool exhausted"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Something went wrong"));
+    }
+
+    @Test
+    void malformedJson_shouldReturn400() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{not json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Malformed request"));
     }
 
 }

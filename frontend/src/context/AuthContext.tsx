@@ -1,8 +1,8 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { LoginRequest, RegisterRequest } from '../types/Auth';
 import { login as loginApi, register as registerApi } from '../api/authApi';
-import { clearSession, loadSession, saveSession, type Session } from '../api/authStorage';
+import { clearSession, loadSession, saveSession, setSessionExpiredHandler, type Session } from '../api/authStorage';
 
 export interface AuthContextType {
     username: string | null;
@@ -18,6 +18,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Lazy initializer: storage is read before the first render, so a returning user is signed in
     // from the start and the route guards never see a false "signed out".
     const [session, setSession] = useState<Session | null>(loadSession);
+
+    // Hear about sessions that end outside React (token expiry, a 401 from the API). The cleanup
+    // unregisters on unmount, which also keeps StrictMode's mount-unmount-mount from leaving a
+    // stale handler behind.
+    useEffect(() => {
+        setSessionExpiredHandler(() => setSession(null));
+        return () => setSessionExpiredHandler(null);
+    }, []);
 
     const startSession = ({ token, username }: Session) => {
         saveSession({ token, username });

@@ -30,6 +30,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation "org.springframework.boot:spring-boot-starter-security"
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	// Cache: Spring's @Cacheable, backed by Caffeine (in-memory, with expiry) for the TMDB catalog
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
 
 	// Postgres
 	runtimeOnly 'org.postgresql:postgresql'
