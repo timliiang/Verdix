@@ -14,7 +14,6 @@ public record ReviewUpdateRequest(
         @Size(max = 1000)
         @NotNull
         String reviewText,
-
-        @NotNull(message = "Watched date is required")
+        // Optional. Not in the future; checked in ReviewService (see validateWatchedDate).
         LocalDate watchedDate
 ) {}

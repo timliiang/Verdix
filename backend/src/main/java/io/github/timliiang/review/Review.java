@@ -7,7 +7,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reviews")
+// One review per member per film. The service checks first so the user gets a clear 409; the
+// constraint is the guarantee, catching two requests that race past that check (also a 409, via
+// GlobalExceptionHandler's DataIntegrityViolationException handler).
+@Table(name = "reviews",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_reviews_user_movie", columnNames = {"userId", "movieId"}))
 @Data
 public class Review {
 
@@ -27,7 +32,7 @@ public class Review {
     @Column(columnDefinition = "TEXT")
     private String reviewText;
 
-    @Column(nullable = false)
+    // Optional: null when the member didn't say when they watched it.
     private LocalDate watchedDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)

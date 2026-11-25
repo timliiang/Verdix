@@ -17,7 +17,6 @@ public record ReviewCreateRequest(
         @Size(max = 1000)
         @NotNull(message = "Review text is required. Can be an empty string")
         String reviewText,
-
-        @NotNull(message = "Watched date is required")
+        // Optional. Not in the future; checked in ReviewService (see validateWatchedDate).
         LocalDate watchedDate
 ) {}

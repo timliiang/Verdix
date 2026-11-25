@@ -7,10 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Page<Review> findByUserId(Long userId, Pageable pageable);
     Page<Review> findByMovieId(Long movieId, Pageable pageable);
+    boolean existsByUserIdAndMovieId(Long userId, Long movieId);
+    Optional<Review> findByUserIdAndMovieId(Long userId, Long movieId);
 
     // Just the scores, for the film's rating summary: one small column instead of whole entities.
     @Query("select r.rating from Review r where r.movieId = :movieId")

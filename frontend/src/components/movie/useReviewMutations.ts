@@ -20,8 +20,10 @@ function useInvalidateFilm(tmdbId: number) {
 }
 
 function withParsedError<T extends { error: unknown }>(mutation: T, overrides: Partial<Record<ApiErrorKind, string>>) {
-  const error: ApiError | null = mutation.error ? parseApiError(mutation.error, overrides) : null
-  return { ...mutation, error }
+  const parseError = (err: unknown): ApiError => parseApiError(err, overrides)
+  const error: ApiError | null = mutation.error ? parseError(mutation.error) : null
+  // parseError too, for per-call onError callbacks (the toast) to word errors the same way.
+  return { ...mutation, error, parseError }
 }
 
 export function useCreateReview(tmdbId: number) {
@@ -29,8 +31,12 @@ export function useCreateReview(tmdbId: number) {
   const mutation = useMutation({
     mutationFn: (input: ReviewInput) => createReview(tmdbId, input),
     onSuccess: invalidate,
+    // 409: they already reviewed it (another tab, a double-click). Refresh so the page swaps
+    // "Rate This Film" for "Edit Your Review".
+    onError: (err) => (parseApiError(err).kind === "conflict" ? invalidate() : undefined),
   })
   return withParsedError(mutation, {
+    conflict: "You've already reviewed this film. Edit your existing review instead.",
     unauthorized: "Your session ended. Sign in again to post your review.",
     server: "Your review couldn't be posted. Try again in a moment.",
     "not-found": "This film is no longer available to review.",

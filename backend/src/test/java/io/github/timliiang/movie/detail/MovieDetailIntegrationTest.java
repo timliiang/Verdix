@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -69,18 +70,19 @@ class MovieDetailIntegrationTest {
 
     @Test
     void reviewedFilm_showsMedianAndAuthors() throws Exception {
-        User user = new User();
-        user.setUsername("marlasinger");
-        user.setEmail("marla@example.com");
-        user.setPassword("x");
-        user = userRepository.save(user);
-
         Movie movie = new Movie();
         movie.setTmdbId(550L);
         movie.setTitle("Fight Club");
         movie = movieRepository.save(movie);
 
+        // Two members, one review each: a member can review a film only once (uk_reviews_user_movie).
         for (int score : List.of(9, 6)) {
+            User user = new User();
+            user.setUsername(score == 9 ? "marlasinger" : "tylerdurden");
+            user.setEmail(user.getUsername() + "@example.com");
+            user.setPassword("x");
+            user = userRepository.save(user);
+
             Review r = new Review();
             r.setUserId(user.getId());
             r.setMovieId(movie.getId());
@@ -96,7 +98,8 @@ class MovieDetailIntegrationTest {
                 .andExpect(jsonPath("$.rating.distribution[8]").value(1));
         mockMvc.perform(get("/api/movies/550/reviews"))
                 .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.content[0].username").value("marlasinger"))
+                // Both rows can share a createdAt, so the newest-first order between them isn't fixed.
+                .andExpect(jsonPath("$.content[*].username", hasItem("marlasinger")))
                 .andExpect(jsonPath("$.content[0].email").doesNotExist());
     }
 

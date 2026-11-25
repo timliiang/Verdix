@@ -3,6 +3,7 @@ package io.github.timliiang.review;
 import io.github.timliiang.review.dto.ReviewCreateRequest;
 import io.github.timliiang.review.dto.ReviewResponse;
 import io.github.timliiang.review.dto.ReviewUpdateRequest;
+import io.github.timliiang.common.exception.ConflictException;
 import io.github.timliiang.common.exception.ResourceNotFoundException;
 import io.github.timliiang.security.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -79,6 +81,47 @@ public class ReviewControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.rating").exists());
+    }
+
+    @Test
+    void create_shouldAcceptMissingWatchedDate() throws Exception {
+        when(reviewService.createReview(any())).thenReturn(buildMockResponse());
+
+        mockMvc.perform(post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tmdbId\":11,\"rating\":7,\"reviewText\":\"\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void create_shouldReturn409WhenAlreadyReviewed() throws Exception {
+        ReviewCreateRequest request = new ReviewCreateRequest(11L, 7, "", null);
+        when(reviewService.createReview(any()))
+                .thenThrow(new ConflictException("You've already reviewed this film. Edit your review instead."));
+
+        mockMvc.perform(post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    // GET /api/reviews/mine?tmdbId=
+    @Test
+    void getMine_shouldReturn200WithReview() throws Exception {
+        when(reviewService.findMine(11L)).thenReturn(Optional.of(buildMockResponse()));
+
+        mockMvc.perform(get("/api/reviews/mine").param("tmdbId", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rating").value(7));
+    }
+
+    @Test
+    void getMine_shouldReturn204WhenNotReviewed() throws Exception {
+        when(reviewService.findMine(11L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/reviews/mine").param("tmdbId", "11"))
+                .andExpect(status().isNoContent());
     }
 
     // GET /api/reviews/user/{userId}

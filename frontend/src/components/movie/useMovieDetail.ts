@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { fetchMovieDetail, fetchMovieReviews } from "../../api/movieApi"
+import { fetchMyReview } from "../../api/reviewApi"
+import { useAuth } from "../../context/AuthContext"
 import { parseApiError } from "../../api/apiError"
 import { movieKeys } from "../../lib/queryKeys"
 import { viewerRegion } from "../../lib/region"
@@ -39,4 +41,17 @@ export function useMovieReviews(tmdbId: number, reviewCount: number) {
   const reviews = query.data?.pages.flatMap((p) => p.content) ?? []
   const total = query.data?.pages.at(-1)?.totalElements ?? reviewCount
   return { query, reviews, total }
+}
+
+// The signed-in member's own review of this film, which decides whether the page offers "Write a
+// Review" or "Edit Your Review". A separate request rather than a search of the public list: that
+// list is paginated, so their review may not be on a loaded page. Signed out: no request at all.
+export function useMyReview(tmdbId: number) {
+  const { username } = useAuth()
+  const query = useQuery({
+    queryKey: movieKeys.mine(tmdbId, username ?? ""),
+    queryFn: ({ signal }) => fetchMyReview(tmdbId, signal),
+    enabled: username !== null,
+  })
+  return { query, review: query.data ?? null, signedIn: username !== null }
 }

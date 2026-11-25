@@ -98,7 +98,7 @@ export interface MovieReview {
   rating: number
   reviewText: string
   // ISO date
-  watchedDate: string
+  watchedDate: string | null
   // ISO local date-time
   createdAt: string
 }

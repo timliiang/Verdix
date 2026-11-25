@@ -13,6 +13,8 @@ import { CastRail, CrewList } from "../components/movie/People"
 import { ArtworkGallery } from "../components/movie/ArtworkGallery"
 import { MovieFacts, RatingPanel, WatchPanel } from "../components/movie/Sidebar"
 import { ReviewsSection } from "../components/movie/ReviewsSection"
+import { ReviewAction, ReviewEditorLayer } from "../components/movie/ReviewEditor"
+import { useReviewEditor } from "../components/movie/useReviewEditor"
 import { Section } from "../components/movie/Section"
 import { useMovieDetail } from "../components/movie/useMovieDetail"
 import { releaseYear } from "../lib/format"
@@ -134,6 +136,8 @@ function MovieDetailView({ tmdbId }: { tmdbId: number }) {
 function MovieContent({ movie, region }: { movie: MovieDetail; region: string }) {
   const [trailerPlaying, setTrailerPlaying] = useState(false)
   const trailerRef = useRef<HTMLDivElement>(null)
+  // Shared by the hero's review button and the member's own card in Reviews; see useReviewEditor.
+  const reviewEditor = useReviewEditor(movie.tmdbId)
 
   // The hero's Play Trailer scrolls the player into view and starts it, rather than opening a
   // modal: the player stays in the page where the viewer can pause, scroll and come back.
@@ -146,7 +150,13 @@ function MovieContent({ movie, region }: { movie: MovieDetail; region: string })
 
   return (
     <>
-      <MovieHero movie={movie} onPlayTrailer={playTrailer} />
+      <MovieHero
+        movie={movie}
+        onPlayTrailer={playTrailer}
+        // Solid only when there is no trailer button to be the hero's main action.
+        reviewAction={<ReviewAction editor={reviewEditor} primary={movie.videos.length === 0} />}
+      />
+      <ReviewEditorLayer editor={reviewEditor} tmdbId={movie.tmdbId} title={movie.title} releaseDate={movie.releaseDate} />
 
       {/* Two columns from lg: the film itself on the left, the score and where-to-watch on the
           right (sticky, so they stay in reach while reading). One column below lg, sidebar first
@@ -205,7 +215,7 @@ function MovieContent({ movie, region }: { movie: MovieDetail; region: string })
             </Section>
           )}
 
-          <ReviewsSection tmdbId={movie.tmdbId} title={movie.title} reviewCount={movie.rating.reviewCount} />
+          <ReviewsSection tmdbId={movie.tmdbId} title={movie.title} reviewCount={movie.rating.reviewCount} editor={reviewEditor} />
         </div>
 
         <aside aria-label="Score and availability" className="hidden lg:block">

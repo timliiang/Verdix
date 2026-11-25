@@ -4,6 +4,8 @@ import io.github.timliiang.review.dto.ReviewCreateRequest;
 import io.github.timliiang.review.dto.ReviewResponse;
 import io.github.timliiang.review.dto.ReviewUpdateRequest;
 import io.github.timliiang.movie.Movie;
+import io.github.timliiang.common.exception.BadRequestException;
+import io.github.timliiang.common.exception.ConflictException;
 import io.github.timliiang.common.exception.ResourceNotFoundException;
 import io.github.timliiang.security.AuthService;
 import io.github.timliiang.movie.MovieService;
@@ -73,6 +75,73 @@ public class ReviewServiceTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> reviewService.createReview(request), "TMDB id does not exist");
         verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void createReview_shouldThrowConflictWhenAlreadyReviewed() {
+        ReviewCreateRequest request = new ReviewCreateRequest(11L, 8, "", null);
+        Movie movie = new Movie();
+        movie.setId(5L);
+
+        when(authService.getCurrentUserId()).thenReturn(1L);
+        when(movieService.getOrFetchMovie(11L)).thenReturn(movie);
+        when(reviewRepository.existsByUserIdAndMovieId(1L, 5L)).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> reviewService.createReview(request));
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void createReview_shouldSaveWithoutWatchedDate() {
+        ReviewCreateRequest request = new ReviewCreateRequest(11L, 8, "", null);
+        Movie movie = new Movie();
+        movie.setId(5L);
+
+        when(authService.getCurrentUserId()).thenReturn(1L);
+        when(movieService.getOrFetchMovie(11L)).thenReturn(movie);
+        when(reviewRepository.existsByUserIdAndMovieId(1L, 5L)).thenReturn(false);
+        when(reviewRepository.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ReviewResponse response = reviewService.createReview(request);
+
+        assertNull(response.watchedDate());
+        assertEquals(8, response.rating());
+    }
+
+    @Test
+    void createReview_shouldRejectFutureWatchedDate() {
+        ReviewCreateRequest request = new ReviewCreateRequest(11L, 8, "", LocalDate.now().plusDays(5));
+
+        assertThrows(BadRequestException.class, () -> reviewService.createReview(request));
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void findMine_shouldReturnTheSignedInMembersReview() {
+        Movie movie = new Movie();
+        movie.setId(5L);
+        Review review = new Review();
+        review.setUserId(1L);
+        review.setMovieId(5L);
+        review.setRating(6);
+
+        when(authService.getCurrentUserId()).thenReturn(1L);
+        when(movieService.findStored(11L)).thenReturn(Optional.of(movie));
+        when(reviewRepository.findByUserIdAndMovieId(1L, 5L)).thenReturn(Optional.of(review));
+
+        Optional<ReviewResponse> mine = reviewService.findMine(11L);
+
+        assertTrue(mine.isPresent());
+        assertEquals(6, mine.get().rating());
+    }
+
+    @Test
+    void findMine_shouldBeEmptyWhenFilmNeverReviewed() {
+        when(authService.getCurrentUserId()).thenReturn(1L);
+        when(movieService.findStored(11L)).thenReturn(Optional.empty());
+
+        assertTrue(reviewService.findMine(11L).isEmpty());
+        verify(reviewRepository, never()).findByUserIdAndMovieId(any(), any());
     }
 
     @Test
