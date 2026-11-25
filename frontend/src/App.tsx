@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import LandingPage from './pages/LandingPage';
 import MoviePage from './pages/MoviePage';
+import MovieDetailPage from './pages/MovieDetailPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StyleguidePage from './pages/StyleguidePage';
@@ -19,6 +20,8 @@ function App() {
           <Route path="/about" element={<LandingPage />} />
           {/* Public: browsing the catalog needs no account; ranking a film will. */}
           <Route path="/movies" element={<MoviePage />} />
+          {/* Public too: a film page only reads. Viewing never stores the film; reviewing does. */}
+          <Route path="/movies/:tmdbId" element={<MovieDetailPage />} />
           <Route path="/styleguide" element={<StyleguidePage />} />
           {/* Signed-out only: a signed-in user is sent on instead of seeing these */}
           <Route element={<GuestRoute />}>

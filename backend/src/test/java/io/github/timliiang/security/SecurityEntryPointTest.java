@@ -2,6 +2,8 @@ package io.github.timliiang.security;
 
 import io.github.timliiang.movie.catalog.CatalogPage;
 import io.github.timliiang.movie.catalog.CatalogService;
+import io.github.timliiang.movie.detail.MovieDetailService;
+import org.springframework.data.domain.Page;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +32,21 @@ class SecurityEntryPointTest {
     // Stands in for TMDB, so the public-route tests check access only.
     @MockitoBean
     private CatalogService catalogService;
+
+    @MockitoBean
+    private MovieDetailService movieDetailService;
+
+    // Film pages are public too, but only their two GET reads.
+    @Test
+    void filmPage_withoutToken_isPublic() throws Exception {
+        when(movieDetailService.reviews(any(), any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/movies/550/details")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/movies/550/reviews")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/movies/550/reviews")).andExpect(status().isUnauthorized());
+        // "*" matches one path segment, so a deeper path does not slip through.
+        mockMvc.perform(get("/api/movies/550/x/details")).andExpect(status().isUnauthorized());
+    }
 
     @Test
     void protectedRoute_withoutToken_shouldReturn401() throws Exception {

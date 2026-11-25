@@ -49,6 +49,21 @@ public class TmdbClient {
                 .body(TmdbMovieDetail.class);
     }
 
+    // Everything the film page shows, in one request (see TmdbMovieFull). include_image_language
+    // keeps English artwork plus text-free artwork ("null"), instead of every language TMDB holds.
+    // A 404 means the id does not exist: the caller's mistake, so it stays a 404. Every other
+    // failure is TMDB's and becomes a 502 through upstream().
+    public TmdbMovieFull getMovieFull(Long tmdbId) {
+        return upstream(() -> restClient.get()
+                .uri("/movie/{id}?language=en-US&include_image_language=en,null"
+                        + "&append_to_response=videos,images,credits,recommendations,similar,release_dates,watch/providers", tmdbId)
+                .retrieve()
+                .onStatus(status -> status.value() == HttpStatus.NOT_FOUND.value(), (request, response) -> {
+                    throw new ResourceNotFoundException("No film with TMDB id " + tmdbId);
+                })
+                .body(TmdbMovieFull.class));
+    }
+
     // /discover/movie is TMDB's general film query; popular, top rated, etc. are presets of it.
     // The caller builds the parameters (see CatalogService), so this stays a thin transport.
     public TmdbDiscoverResponse discover(MultiValueMap<String, String> params) {

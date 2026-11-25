@@ -1,5 +1,7 @@
 package io.github.timliiang.movie.catalog;
 
+import io.github.timliiang.movie.tmdb.TmdbListMovie;
+
 import java.util.List;
 
 // What the catalog grid needs per film: our own shape, so TMDB can rename fields without the
@@ -13,4 +15,15 @@ public record CatalogMovie(
         String posterPath,
         List<Long> genreIds,
         double popularity
-) {}
+) {
+    // Shared by the catalog grid and the film page's similar-films rail, which show the same card.
+    public static CatalogMovie from(TmdbListMovie m) {
+        return new CatalogMovie(
+                m.id(),
+                m.title(),
+                m.releaseDate() == null || m.releaseDate().isBlank() ? null : m.releaseDate(),
+                m.posterPath(),
+                m.genreIds() == null ? List.of() : m.genreIds(),
+                m.popularity());
+    }
+}

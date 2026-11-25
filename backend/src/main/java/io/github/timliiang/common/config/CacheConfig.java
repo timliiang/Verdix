@@ -19,6 +19,7 @@ public class CacheConfig {
 
     public static final String CATALOG = "catalog";
     public static final String GENRES = "genres";
+    public static final String MOVIE_DETAIL = "movieDetail";
 
     @Bean
     public CacheManager cacheManager() {
@@ -33,6 +34,13 @@ public class CacheConfig {
         // TMDB's genre list practically never changes.
         manager.registerCustomCache(GENRES, Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofHours(24))
+                .build());
+        // One film page's TMDB facts for one region (trimmed: ~20-40 KB). Credits, artwork and
+        // providers change rarely, so an hour is fresh; 1,000 entries caps memory at a few tens of MB.
+        // Verdix's own rating is not in here, so new reviews still show at once.
+        manager.registerCustomCache(MOVIE_DETAIL, Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofHours(1))
+                .maximumSize(1_000)
                 .build());
         return manager;
     }

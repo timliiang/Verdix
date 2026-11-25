@@ -1,6 +1,8 @@
 package io.github.timliiang.review;
 
 import io.github.timliiang.movie.MovieService;
+import io.github.timliiang.movie.detail.RatingSummary;
+import io.github.timliiang.review.dto.MovieReviewResponse;
 import io.github.timliiang.review.dto.ReviewCreateRequest;
 import io.github.timliiang.review.dto.ReviewResponse;
 import io.github.timliiang.review.dto.ReviewUpdateRequest;
@@ -29,6 +31,20 @@ public class ReviewService {
     public Page<ReviewResponse> findByMovieId(Long movieId, Pageable pageable) {
         return reviewRepository.findByMovieId(movieId, pageable)
                 .map(ReviewResponse::from);
+    }
+
+    // The film page's two reads. A film with no reviews has no movies row, so both answer "empty"
+    // rather than 404: an unreviewed film is the normal case, not an error.
+    public RatingSummary summarizeByTmdbId(Long tmdbId) {
+        return movieService.findStored(tmdbId)
+                .map(movie -> RatingSummary.of(reviewRepository.findRatingsByMovieId(movie.getId())))
+                .orElseGet(RatingSummary::empty);
+    }
+
+    public Page<MovieReviewResponse> findPublicByTmdbId(Long tmdbId, Pageable pageable) {
+        return movieService.findStored(tmdbId)
+                .map(movie -> reviewRepository.findPublicByMovieId(movie.getId(), pageable))
+                .orElseGet(() -> Page.empty(pageable));
     }
 
     public ReviewResponse createReview(ReviewCreateRequest request) {

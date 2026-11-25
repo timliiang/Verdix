@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @Transactional
 @AllArgsConstructor
@@ -28,6 +30,13 @@ public class MovieService {
                     TmdbMovieDetail detail = tmdbClient.getMovieById(tmdbId);
                     return movieRepository.save(mapToEntity(detail));
                 });
+    }
+
+    // Read-only: the film page uses this to find Verdix's own data for a film. Unlike
+    // getOrFetchMovie it never inserts, so a film enters the movies table only through a review.
+    @Transactional(readOnly = true)
+    public Optional<Movie> findStored(Long tmdbId) {
+        return movieRepository.findByTmdbId(tmdbId);
     }
 
     public Page<Movie> listMovies(Pageable pageable) {
