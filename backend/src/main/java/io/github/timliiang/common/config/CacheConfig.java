@@ -20,6 +20,7 @@ public class CacheConfig {
     public static final String CATALOG = "catalog";
     public static final String GENRES = "genres";
     public static final String MOVIE_DETAIL = "movieDetail";
+    public static final String SEARCH = "search";
 
     @Bean
     public CacheManager cacheManager() {
@@ -41,6 +42,12 @@ public class CacheConfig {
         manager.registerCustomCache(MOVIE_DETAIL, Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofHours(1))
                 .maximumSize(1_000)
+                .build());
+        // One page of title-search results per (text, page). Search terms have a long tail of
+        // one-off queries, so the cap matters more than the expiry here.
+        manager.registerCustomCache(SEARCH, Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(10))
+                .maximumSize(5_000)
                 .build());
         return manager;
     }

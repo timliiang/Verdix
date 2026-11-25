@@ -66,9 +66,11 @@ class SecurityEntryPointTest {
     void catalog_withoutToken_isPublic() throws Exception {
         when(catalogService.discover(any())).thenReturn(new CatalogPage(1, 1, 0, List.of()));
         when(catalogService.genres()).thenReturn(List.of());
+        when(catalogService.search(any())).thenReturn(new CatalogPage(1, 0, 0, List.of()));
 
         mockMvc.perform(get("/api/movies/discover")).andExpect(status().isOk());
         mockMvc.perform(get("/api/movies/genres")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/movies/search").param("query", "alien")).andExpect(status().isOk());
         mockMvc.perform(get("/api/movies/discover")
                         .header("Authorization", "Bearer not.a.valid-token"))
                 .andExpect(status().isOk());
@@ -77,8 +79,8 @@ class SecurityEntryPointTest {
     // permitAll is narrow: the rest of /api/movies, and other methods on the same path, stay closed.
     @Test
     void otherMovieRoutes_withoutToken_shouldReturn401() throws Exception {
-        mockMvc.perform(get("/api/movies/search").param("query", "alien")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/movies/550")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/movies/search")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/movies/discover")).andExpect(status().isUnauthorized());
     }
 }

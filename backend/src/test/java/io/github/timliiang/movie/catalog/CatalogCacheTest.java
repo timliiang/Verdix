@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 // Full context, because @Cacheable only works through the proxy Spring wraps around the bean.
@@ -35,6 +36,18 @@ class CatalogCacheTest {
         catalogService.discover(new CatalogQuery(CatalogList.TOP_RATED, CatalogSort.LIST, List.of(18L, 53L), null, 2));
 
         verify(tmdbClient, times(2)).discover(any());
+    }
+
+    @Test
+    void searchesDifferingOnlyInCaseAndSpacing_hitTmdbOnce_andBlankNever() {
+        when(tmdbClient.searchMovies(any(), anyInt())).thenReturn(new TmdbDiscoverResponse(1, List.of(), 0, 0));
+
+        catalogService.search(new SearchQuery("Alien", 1));
+        catalogService.search(new SearchQuery("  alien ", 1));
+        catalogService.search(new SearchQuery("   ", 1));
+
+        verify(tmdbClient, times(1)).searchMovies("alien", 1);
+        verify(tmdbClient, times(1)).searchMovies(any(), anyInt());
     }
 
     @Test

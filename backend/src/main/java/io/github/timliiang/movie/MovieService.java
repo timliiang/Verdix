@@ -3,7 +3,6 @@ package io.github.timliiang.movie;
 import io.github.timliiang.movie.tmdb.TmdbClient;
 import io.github.timliiang.movie.tmdb.TmdbGenre;
 import io.github.timliiang.movie.tmdb.TmdbMovieDetail;
-import io.github.timliiang.movie.tmdb.TmdbSearchResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,10 +18,6 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
     private final TmdbClient tmdbClient;
-
-    public TmdbSearchResponse searchTmdb(String query, int page) {
-        return tmdbClient.searchMovies(query, page);
-    }
 
     public Movie getOrFetchMovie(Long tmdbId) {
         return movieRepository.findByTmdbId(tmdbId)

@@ -30,6 +30,15 @@ public class CatalogController {
         return ResponseEntity.ok(catalogService.discover(new CatalogQuery(list, sort, genres, decade, page)));
     }
 
+    // GET /api/movies/search?query=alien&page=2. Same page shape as /discover, so the frontend
+    // renders results with the same card. A blank query answers an empty page (no TMDB call).
+    @GetMapping("/search")
+    public ResponseEntity<CatalogPage> search(
+            @RequestParam(defaultValue = "") String query,
+            @RequestParam(defaultValue = "1") int page) {
+        return ResponseEntity.ok(catalogService.search(new SearchQuery(query, page)));
+    }
+
     @GetMapping("/genres")
     public ResponseEntity<List<CatalogGenre>> genres() {
         return ResponseEntity.ok(catalogService.genres());

@@ -49,6 +49,22 @@ public class CatalogService {
                 results);
     }
 
+    // Title search. Cached like discover: popular searches ("dune", "batman") are typed by many
+    // people, and the frontend's debounce already trims the per-keystroke calls of one person.
+    // A blank query is answered here without TMDB (which would reject it).
+    @Cacheable(CacheConfig.SEARCH)
+    public CatalogPage search(SearchQuery query) {
+        if (query.isBlank()) return new CatalogPage(1, 0, 0, List.of());
+        TmdbDiscoverResponse response = tmdbClient.searchMovies(query.text(), query.page());
+        List<CatalogMovie> results = response.results() == null ? List.of()
+                : response.results().stream().map(CatalogMovie::from).toList();
+        return new CatalogPage(
+                response.page(),
+                Math.min(response.totalPages(), CatalogQuery.MAX_PAGE),
+                response.totalResults(),
+                results);
+    }
+
     @Cacheable(CacheConfig.GENRES)
     public List<CatalogGenre> genres() {
         return tmdbClient.getGenres().stream()

@@ -29,11 +29,14 @@ public class TmdbClient {
                 .build();
     }
 
-    public TmdbSearchResponse searchMovies(String query, int page) {
-        return restClient.get()
-                .uri("/search/movie?query={q}&page={p}", query, page)
+    // /search/movie answers in the same list shape as /discover/movie, so it reuses that record.
+    // The query goes in as a URI variable, so RestClient encodes it ("&", "#", spaces) and it can
+    // never add parameters of its own. Adult titles are excluded, as in the catalog.
+    public TmdbDiscoverResponse searchMovies(String query, int page) {
+        return upstream(() -> restClient.get()
+                .uri("/search/movie?query={q}&page={p}&include_adult=false&language=en-US", query, page)
                 .retrieve()
-                .body(TmdbSearchResponse.class);
+                .body(TmdbDiscoverResponse.class));
     }
 
     public TmdbMovieDetail getMovieById(Long tmdbId) {

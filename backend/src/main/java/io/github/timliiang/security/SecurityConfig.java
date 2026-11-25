@@ -42,10 +42,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         // The public /movies catalog and film pages. GET only, and these paths only:
-                        // search, GET /api/movies/{id} (which writes to the movies table) and writing
-                        // reviews stay signed-in. "*" matches exactly one path segment (the TMDB id).
+                        // GET /api/movies/{id} (which writes to the movies table) and writing reviews
+                        // stay signed-in. "*" matches exactly one path segment (the TMDB id).
                         .requestMatchers(HttpMethod.GET,
                                 "/api/movies/discover",
+                                "/api/movies/search",
                                 "/api/movies/genres",
                                 "/api/movies/*/details",
                                 "/api/movies/*/reviews").permitAll()
