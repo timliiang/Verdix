@@ -3,6 +3,7 @@ package io.github.timliiang.review;
 import io.github.timliiang.movie.MovieService;
 import io.github.timliiang.movie.detail.RatingSummary;
 import io.github.timliiang.review.dto.MovieReviewResponse;
+import io.github.timliiang.review.dto.MyReviewResponse;
 import io.github.timliiang.review.dto.ReviewCreateRequest;
 import io.github.timliiang.review.dto.ReviewResponse;
 import io.github.timliiang.review.dto.ReviewUpdateRequest;
@@ -61,6 +62,12 @@ public class ReviewService {
         return movieService.findStored(tmdbId)
                 .flatMap(movie -> reviewRepository.findByUserIdAndMovieId(userId, movie.getId()))
                 .map(ReviewResponse::from);
+    }
+
+    // "Your reviews": the signed-in member's reviews with their films. The member comes from the
+    // token, never from the request, so this can only ever list the caller's own reviews.
+    public Page<MyReviewResponse> findMyReviews(Pageable pageable) {
+        return reviewRepository.findOwnWithFilm(authService.getCurrentUserId(), pageable);
     }
 
     public ReviewResponse createReview(ReviewCreateRequest request) {

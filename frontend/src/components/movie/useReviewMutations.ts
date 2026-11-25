@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createReview, deleteReview, updateReview, type ReviewInput } from "../../api/reviewApi"
 import { parseApiError, type ApiError, type ApiErrorKind } from "../../api/apiError"
-import { movieKeys } from "../../lib/queryKeys"
+import { movieKeys, myReviewKeys } from "../../lib/queryKeys"
 
 // Review writes, pessimistic: nothing on screen changes until the server has accepted the write.
 // The server can genuinely refuse (validation, someone else's review, a review already deleted),
@@ -16,7 +16,13 @@ import { movieKeys } from "../../lib/queryKeys"
 
 function useInvalidateFilm(tmdbId: number) {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: movieKeys.all(tmdbId) })
+  // The film's score and reviews, and the member's own list on /reviews (marked stale; it refetches
+  // when next shown, so a review edited on a film page is current when they open Your reviews).
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: movieKeys.all(tmdbId) }),
+      queryClient.invalidateQueries({ queryKey: myReviewKeys.all }),
+    ])
 }
 
 function withParsedError<T extends { error: unknown }>(mutation: T, overrides: Partial<Record<ApiErrorKind, string>>) {
