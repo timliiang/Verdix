@@ -7,8 +7,12 @@ export const CATALOG_PAGE_SIZE = 20
 // GET /api/movies/discover: the backend's cached proxy over TMDB's /discover/movie (public, no
 // account needed). Defaults and empty filters are left out (axios drops undefined params), so the
 // URL stays short and equal queries look equal to the server's cache.
-async function requestPage({ list, sort, genreIds, decade, page }: CatalogQuery): Promise<CatalogPage> {
+// Exported uncached for callers that manage freshness themselves (the home page, through
+// TanStack Query, so it can refetch as TMDB's lists change). fetchCatalog below keeps one promise
+// per query for the whole visit, which suits paging through /movies but never refreshes.
+export async function requestPage({ list, sort, genreIds, decade, page }: CatalogQuery, signal?: AbortSignal): Promise<CatalogPage> {
   const { data } = await api.get<CatalogPage>("/api/movies/discover", {
+    signal,
     params: {
       list,
       sort,

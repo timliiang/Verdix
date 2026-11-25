@@ -29,11 +29,14 @@ public class TmdbClient {
                 .build();
     }
 
-    public TmdbSearchResponse searchMovies(String query, int page) {
-        return restClient.get()
-                .uri("/search/movie?query={q}&page={p}", query, page)
+    // /search/movie answers in the same list shape as /discover/movie, so it reuses that record.
+    // The query goes in as a URI variable, so RestClient encodes it ("&", "#", spaces) and it can
+    // never add parameters of its own. Adult titles are excluded, as in the catalog.
+    public TmdbDiscoverResponse searchMovies(String query, int page) {
+        return upstream(() -> restClient.get()
+                .uri("/search/movie?query={q}&page={p}&include_adult=false&language=en-US", query, page)
                 .retrieve()
-                .body(TmdbSearchResponse.class);
+                .body(TmdbDiscoverResponse.class));
     }
 
     public TmdbMovieDetail getMovieById(Long tmdbId) {
@@ -47,6 +50,21 @@ public class TmdbClient {
                     throw new RuntimeException("TMDB client error: " + response.getStatusCode());
                 })
                 .body(TmdbMovieDetail.class);
+    }
+
+    // Everything the film page shows, in one request (see TmdbMovieFull). include_image_language
+    // keeps English artwork plus text-free artwork ("null"), instead of every language TMDB holds.
+    // A 404 means the id does not exist: the caller's mistake, so it stays a 404. Every other
+    // failure is TMDB's and becomes a 502 through upstream().
+    public TmdbMovieFull getMovieFull(Long tmdbId) {
+        return upstream(() -> restClient.get()
+                .uri("/movie/{id}?language=en-US&include_image_language=en,null"
+                        + "&append_to_response=videos,images,credits,recommendations,similar,release_dates,watch/providers", tmdbId)
+                .retrieve()
+                .onStatus(status -> status.value() == HttpStatus.NOT_FOUND.value(), (request, response) -> {
+                    throw new ResourceNotFoundException("No film with TMDB id " + tmdbId);
+                })
+                .body(TmdbMovieFull.class));
     }
 
     // /discover/movie is TMDB's general film query; popular, top rated, etc. are presets of it.

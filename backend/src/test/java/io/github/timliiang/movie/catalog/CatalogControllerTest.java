@@ -97,6 +97,25 @@ class CatalogControllerTest {
     }
 
     @Test
+    void search_normalisesTextAndBindsPage() throws Exception {
+        when(catalogService.search(any())).thenReturn(ONE_FILM);
+
+        mockMvc.perform(get("/api/movies/search").param("query", "  Fight   CLUB ").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[0].title").value("Fight Club"));
+
+        verify(catalogService).search(new SearchQuery("fight club", 2));
+    }
+
+    @Test
+    void search_tooLong_is400WithReason() throws Exception {
+        mockMvc.perform(get("/api/movies/search").param("query", "a".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Search text must be at most 100 characters"));
+        verifyNoInteractions(catalogService);
+    }
+
+    @Test
     void genres_returnsList() throws Exception {
         when(catalogService.genres()).thenReturn(List.of(new CatalogGenre(28L, "Action")));
 

@@ -4,6 +4,7 @@ import { Bell, Menu, Moon, Search, Sun, X } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { initials } from "../../lib/format"
 import { ProfileMenu } from "./ProfileMenu"
+import { DrawerSearch, NavSearch } from "../search/NavSearch"
 import type { Theme } from "./useTheme"
 
 // The active link is derived from the URL, so the underline follows the page instead of always
@@ -29,20 +30,6 @@ function Wordmark() {
     <span translate="no" className="text-heading-sm font-bold tracking-tight text-ink night:text-glow-action">
       Verdix
     </span>
-  )
-}
-
-function SearchField({ className }: { className?: string }) {
-  return (
-    <label className={cn("relative block", className)}>
-      <span className="sr-only">Search films, reviews and people</span>
-      <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate" aria-hidden="true" />
-      <input
-        type="search"
-        placeholder="Search films"
-        className="h-10 w-full rounded-xl border border-hairline-soft bg-hairline pl-10 pr-4 text-link-sm font-normal text-ink outline-none transition-[width,border-color] placeholder:text-slate focus:border-highlight/60"
-      />
-    </label>
   )
 }
 
@@ -124,7 +111,7 @@ export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {full && (
               <>
-                <SearchField className="hidden w-48 xl:block [&:focus-within]:w-64" />
+                <NavSearch className="hidden w-48 transition-[width] duration-200 xl:block [&:focus-within]:w-64" />
                 <Link to="/search" className={cn(iconButton, "hidden sm:grid xl:hidden")} aria-label="Search">
                   <Search className="size-5" strokeWidth={1.75} />
                 </Link>
@@ -181,7 +168,7 @@ export function HomeNav({ theme, onToggleTheme, variant = "full" }: HomeNavProps
             <div className="flex items-center gap-2.5 px-2 py-1">
               <Wordmark />
             </div>
-            <SearchField className="mt-6 sm:hidden" />
+            <DrawerSearch className="mt-6 sm:hidden" onDone={() => setOpen(false)} />
             <nav aria-label="Mobile primary" className="mt-6 flex flex-col gap-1">
               {navItems.map((item) => (
                 <Link

@@ -3,7 +3,6 @@ package io.github.timliiang.movie.catalog;
 import io.github.timliiang.common.config.CacheConfig;
 import io.github.timliiang.movie.tmdb.TmdbClient;
 import io.github.timliiang.movie.tmdb.TmdbDiscoverResponse;
-import io.github.timliiang.movie.tmdb.TmdbListMovie;
 import lombok.AllArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,23 @@ public class CatalogService {
     public CatalogPage discover(CatalogQuery query) {
         TmdbDiscoverResponse response = tmdbClient.discover(discoverParams(query));
         List<CatalogMovie> results = response.results() == null ? List.of()
-                : response.results().stream().map(CatalogService::toCatalogMovie).toList();
+                : response.results().stream().map(CatalogMovie::from).toList();
+        return new CatalogPage(
+                response.page(),
+                Math.min(response.totalPages(), CatalogQuery.MAX_PAGE),
+                response.totalResults(),
+                results);
+    }
+
+    // Title search. Cached like discover: popular searches ("dune", "batman") are typed by many
+    // people, and the frontend's debounce already trims the per-keystroke calls of one person.
+    // A blank query is answered here without TMDB (which would reject it).
+    @Cacheable(CacheConfig.SEARCH)
+    public CatalogPage search(SearchQuery query) {
+        if (query.isBlank()) return new CatalogPage(1, 0, 0, List.of());
+        TmdbDiscoverResponse response = tmdbClient.searchMovies(query.text(), query.page());
+        List<CatalogMovie> results = response.results() == null ? List.of()
+                : response.results().stream().map(CatalogMovie::from).toList();
         return new CatalogPage(
                 response.page(),
                 Math.min(response.totalPages(), CatalogQuery.MAX_PAGE),
@@ -125,15 +140,5 @@ public class CatalogService {
 
     private static LocalDate earlier(LocalDate current, LocalDate candidate) {
         return current == null || candidate.isBefore(current) ? candidate : current;
-    }
-
-    private static CatalogMovie toCatalogMovie(TmdbListMovie m) {
-        return new CatalogMovie(
-                m.id(),
-                m.title(),
-                m.releaseDate() == null || m.releaseDate().isBlank() ? null : m.releaseDate(),
-                m.posterPath(),
-                m.genreIds() == null ? List.of() : m.genreIds(),
-                m.popularity());
     }
 }

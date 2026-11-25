@@ -1,6 +1,6 @@
-// Content for the home page (src/pages/HomePage.tsx): the featured film, the weekly ranking,
-// recent reviews and reviewers to follow.
-// Titles match the poster art in public/movies. Scores, counts and reviews are mock data.
+// Mock content still used by the home page (recent reviews, reviewers to follow) and the register
+// page's poster fan (rankedThisWeek). The home hero and now-playing rail are live TMDB data now
+// (components/home/useHomeFilms.ts). Titles match the poster art in public/movies.
 import { films, trendingFilms, type LandingFilm } from "./landingData"
 import { topReviewers } from "./homeData"
 import type { Reviewer } from "./homeTypes"
@@ -26,15 +26,6 @@ export const rankedThisWeek: RankedFilm[] = trendingFilms.map((entry, i) => ({
   score: entry.score,
   rankings: entry.rankings,
 }))
-
-// The most-ranked film this week, not the top-scored one: it is the film people are talking about.
-const neonDrifter = rankedThisWeek.find((f) => f.id === "neon-drifter")!
-export const featuredFilm = {
-  ...neonDrifter,
-  synopsis: "A getaway driver takes one last job across a flooded, neon-lit city, and the city fights back.",
-  runtime: "2h 11m",
-  backdropUrl: "/movies/hero-backdrop.png",
-}
 
 export const recentReviews: DirectionReview[] = [
   {

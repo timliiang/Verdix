@@ -2,6 +2,8 @@ package io.github.timliiang.security;
 
 import io.github.timliiang.movie.catalog.CatalogPage;
 import io.github.timliiang.movie.catalog.CatalogService;
+import io.github.timliiang.movie.detail.MovieDetailService;
+import org.springframework.data.domain.Page;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +33,21 @@ class SecurityEntryPointTest {
     @MockitoBean
     private CatalogService catalogService;
 
+    @MockitoBean
+    private MovieDetailService movieDetailService;
+
+    // Film pages are public too, but only their two GET reads.
+    @Test
+    void filmPage_withoutToken_isPublic() throws Exception {
+        when(movieDetailService.reviews(any(), any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/movies/550/details")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/movies/550/reviews")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/movies/550/reviews")).andExpect(status().isUnauthorized());
+        // "*" matches one path segment, so a deeper path does not slip through.
+        mockMvc.perform(get("/api/movies/550/x/details")).andExpect(status().isUnauthorized());
+    }
+
     @Test
     void protectedRoute_withoutToken_shouldReturn401() throws Exception {
         mockMvc.perform(get("/api/reviews/user/1"))
@@ -49,9 +66,11 @@ class SecurityEntryPointTest {
     void catalog_withoutToken_isPublic() throws Exception {
         when(catalogService.discover(any())).thenReturn(new CatalogPage(1, 1, 0, List.of()));
         when(catalogService.genres()).thenReturn(List.of());
+        when(catalogService.search(any())).thenReturn(new CatalogPage(1, 0, 0, List.of()));
 
         mockMvc.perform(get("/api/movies/discover")).andExpect(status().isOk());
         mockMvc.perform(get("/api/movies/genres")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/movies/search").param("query", "alien")).andExpect(status().isOk());
         mockMvc.perform(get("/api/movies/discover")
                         .header("Authorization", "Bearer not.a.valid-token"))
                 .andExpect(status().isOk());
@@ -60,8 +79,8 @@ class SecurityEntryPointTest {
     // permitAll is narrow: the rest of /api/movies, and other methods on the same path, stay closed.
     @Test
     void otherMovieRoutes_withoutToken_shouldReturn401() throws Exception {
-        mockMvc.perform(get("/api/movies/search").param("query", "alien")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/movies/550")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/movies/search")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/movies/discover")).andExpect(status().isUnauthorized());
     }
 }

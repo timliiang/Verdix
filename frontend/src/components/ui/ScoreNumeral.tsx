@@ -17,17 +17,19 @@ interface ScoreNumeralProps {
   score: number
   size?: keyof typeof sizes
   tone?: keyof typeof tones
+  // 1 for averages and medians (7.5); 0 for a single member's whole-number score.
+  digits?: 0 | 1
   className?: string
 }
 
 // The 0-10 Verdix score. Regular weight with tight tracking like every DESIGN.md display size;
 // tabular figures keep columns of scores aligned.
-export function ScoreNumeral({ score, size = "lg", tone = "light", className }: ScoreNumeralProps) {
+export function ScoreNumeral({ score, size = "lg", tone = "light", digits = 1, className }: ScoreNumeralProps) {
   const s = sizes[size]
   const t = tones[tone]
   return (
     <span className={cn("inline-flex items-baseline gap-1 tabular-nums", className)}>
-      <span className={cn(s.value, t.value)}>{score.toFixed(1)}</span>
+      <span className={cn(s.value, t.value)}>{score.toFixed(digits)}</span>
       <span className={cn(s.scale, t.scale)}>/10</span>
     </span>
   )
