@@ -1,7 +1,7 @@
 import "@fontsource-variable/geist"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router-dom"
-import { Clapperboard, RotateCw } from "lucide-react"
+import { Clapperboard, Loader2, RotateCw } from "lucide-react"
 import { HomeFooter, HomeNav } from "../components/home/HomeChrome"
 import { useTheme } from "../components/home/useTheme"
 import { buttonClass } from "../components/ui/buttonClass"
@@ -34,8 +34,10 @@ export default function MovieDetailPage() {
 // tab reset, scrolled to the top.
 function MovieDetailView({ tmdbId }: { tmdbId: number }) {
   const { theme, toggleTheme } = useTheme()
-  const { state, region, retry } = useMovieDetail(tmdbId)
-  const movie = state.status === "ready" ? state.movie : null
+  const { query, region, error } = useMovieDetail(tmdbId)
+  // Data wins over error: if a background refetch fails (say, after a review was posted), the film
+  // already on screen stays; the error screens below are only for "nothing to show yet".
+  const movie = query.data ?? null
 
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -50,7 +52,7 @@ function MovieDetailView({ tmdbId }: { tmdbId: number }) {
     }
   }, [movie])
 
-  if (state.status === "error" && state.reason === "not-found") return <NotFoundPage />
+  if (!movie && error?.kind === "not-found") return <NotFoundPage />
 
   return (
     <div data-theme={theme} className="flex min-h-[100dvh] flex-col font-display text-ink antialiased">
@@ -78,7 +80,7 @@ function MovieDetailView({ tmdbId }: { tmdbId: number }) {
           )}
         </nav>
 
-        {state.status === "loading" && (
+        {!movie && query.isPending && (
           <>
             <p className="sr-only" role="status">
               Loading film…
@@ -86,14 +88,28 @@ function MovieDetailView({ tmdbId }: { tmdbId: number }) {
             <MovieSkeleton />
           </>
         )}
-        {state.status === "error" && (
+        {/* Reached only after Query's automatic retries (2, with backoff) have also failed. */}
+        {!movie && error && (
           <StatusPanel
             title="This film could not be loaded"
-            body="The film catalogue may be busy. Check your connection, then try again."
+            body={
+              error.kind === "network"
+                ? error.message
+                : "The film catalogue may be busy. Wait a moment, then try again."
+            }
             action={
-              <button type="button" onClick={retry} className={buttonClass("primary")}>
-                <RotateCw className="size-4" aria-hidden="true" />
-                Try Again
+              <button
+                type="button"
+                onClick={() => query.refetch()}
+                disabled={query.isFetching}
+                className={buttonClass("primary", "disabled:cursor-wait")}
+              >
+                {query.isFetching ? (
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                ) : (
+                  <RotateCw className="size-4" aria-hidden="true" />
+                )}
+                {query.isFetching ? "Retrying…" : "Try Again"}
               </button>
             }
           />
