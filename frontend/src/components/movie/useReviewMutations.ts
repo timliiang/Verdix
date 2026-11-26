@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createReview, deleteReview, updateReview, type ReviewInput } from "../../api/reviewApi"
 import { parseApiError, type ApiError, type ApiErrorKind } from "../../api/apiError"
-import { movieKeys } from "../../lib/queryKeys"
+import { movieKeys, myReviewKeys } from "../../lib/queryKeys"
 
 // Review writes, pessimistic: nothing on screen changes until the server has accepted the write.
 // The server can genuinely refuse (validation, someone else's review, a review already deleted),
@@ -16,12 +16,20 @@ import { movieKeys } from "../../lib/queryKeys"
 
 function useInvalidateFilm(tmdbId: number) {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: movieKeys.all(tmdbId) })
+  // The film's score and reviews, and the member's own list on /reviews (marked stale; it refetches
+  // when next shown, so a review edited on a film page is current when they open Your reviews).
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: movieKeys.all(tmdbId) }),
+      queryClient.invalidateQueries({ queryKey: myReviewKeys.all }),
+    ])
 }
 
 function withParsedError<T extends { error: unknown }>(mutation: T, overrides: Partial<Record<ApiErrorKind, string>>) {
-  const error: ApiError | null = mutation.error ? parseApiError(mutation.error, overrides) : null
-  return { ...mutation, error }
+  const parseError = (err: unknown): ApiError => parseApiError(err, overrides)
+  const error: ApiError | null = mutation.error ? parseError(mutation.error) : null
+  // parseError too, for per-call onError callbacks (the toast) to word errors the same way.
+  return { ...mutation, error, parseError }
 }
 
 export function useCreateReview(tmdbId: number) {
@@ -29,8 +37,12 @@ export function useCreateReview(tmdbId: number) {
   const mutation = useMutation({
     mutationFn: (input: ReviewInput) => createReview(tmdbId, input),
     onSuccess: invalidate,
+    // 409: they already reviewed it (another tab, a double-click). Refresh so the page swaps
+    // "Rate This Film" for "Edit Your Review".
+    onError: (err) => (parseApiError(err).kind === "conflict" ? invalidate() : undefined),
   })
   return withParsedError(mutation, {
+    conflict: "You've already reviewed this film. Edit your existing review instead.",
     unauthorized: "Your session ended. Sign in again to post your review.",
     server: "Your review couldn't be posted. Try again in a moment.",
     "not-found": "This film is no longer available to review.",

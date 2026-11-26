@@ -32,6 +32,16 @@ public class ReviewController {
         return ResponseEntity.ok(reviews);
     }
 
+    // GET /api/reviews/mine?tmdbId=550. Signed-in only (not in SecurityConfig's permitAll list):
+    // "mine" needs a token to know who is asking. 200 with the review, or 204 No Content when the
+    // member hasn't reviewed the film: not having a review is a normal state, not a 404.
+    @GetMapping("/mine")
+    public ResponseEntity<ReviewResponse> getMine(@RequestParam Long tmdbId) {
+        return reviewService.findMine(tmdbId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable Long id,

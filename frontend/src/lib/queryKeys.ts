@@ -8,8 +8,18 @@ export const searchKeys = {
     pages: (text: string) => ['search', text, 'pages'] as const,
 };
 
+// The signed-in member's review list (/reviews). Keyed by username so another account never sees a
+// cached list, and by sort because each order is a different set of pages.
+export const myReviewKeys = {
+    all: ['my-reviews'] as const,
+    list: (username: string, sort: string) => ['my-reviews', username, sort] as const,
+};
+
 export const movieKeys = {
     all: (tmdbId: number) => ['movie', tmdbId] as const,
     details: (tmdbId: number, region: string) => ['movie', tmdbId, 'details', region] as const,
     reviews: (tmdbId: number) => ['movie', tmdbId, 'reviews'] as const,
+    // The signed-in member's own review. Keyed by username too, so signing in as someone else never
+    // shows the previous account's cached review. Still under ['movie', id], so writes refresh it.
+    mine: (tmdbId: number, username: string) => ['movie', tmdbId, 'mine', username] as const,
 };

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { Clock, Film, Play } from "lucide-react"
 import { buttonClass } from "../ui/buttonClass"
@@ -14,12 +15,14 @@ const chip = "inline-flex items-center gap-1 rounded-full bg-canvas/60 px-2.5 py
 interface MovieHeroProps {
   movie: MovieDetail
   onPlayTrailer: () => void
+  // The write/edit review button, passed in so the hero stays layout only (no auth or review state).
+  reviewAction: ReactNode
 }
 
 // The film's backdrop as a contained photo stage (the home hero's frame), with the poster, title,
 // key facts and the Verdix score over it. data-surface="stage" pins the night palette: light copy
 // on a dark photo in either theme. Hero stack: title, one chip row, tagline, CTAs.
-export function MovieHero({ movie, onPlayTrailer }: MovieHeroProps) {
+export function MovieHero({ movie, onPlayTrailer, reviewAction }: MovieHeroProps) {
   const reduce = useReducedMotion()
   const year = releaseYear(movie.releaseDate)
   const runtime = formatRuntime(movie.runtime)
@@ -101,7 +104,7 @@ export function MovieHero({ movie, onPlayTrailer }: MovieHeroProps) {
 
         {/* Beside the poster from sm (it spans both rows there); under poster and title on phones. */}
         <div className="col-span-2 flex flex-col gap-4 self-start sm:col-span-1 sm:col-start-2 sm:-mt-2">
-          <HeroCopy movie={movie} directors={directors} onPlayTrailer={onPlayTrailer} />
+          <HeroCopy movie={movie} directors={directors} onPlayTrailer={onPlayTrailer} reviewAction={reviewAction} />
         </div>
 
         {/* The score earns its own row on phones only when there is one; "not rated" is said by
@@ -132,10 +135,12 @@ function HeroCopy({
   movie,
   directors,
   onPlayTrailer,
+  reviewAction,
 }: {
   movie: MovieDetail
   directors: { id: number; name: string }[]
   onPlayTrailer: () => void
+  reviewAction: ReactNode
 }) {
   return (
     <>
@@ -152,15 +157,7 @@ function HeroCopy({
             Play Trailer
           </button>
         )}
-        <a
-          href="#reviews"
-          className={buttonClass(
-            "text-link",
-            "h-12 rounded-xl border border-hairline-soft bg-ink/5 px-5 text-button backdrop-blur hover:bg-ink/10 hover:no-underline sm:h-10",
-          )}
-        >
-          Reviews
-        </a>
+        {reviewAction}
       </div>
     </>
   )

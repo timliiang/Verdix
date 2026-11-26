@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StyleguidePage from './pages/StyleguidePage';
 import NotFoundPage from './pages/NotFoundPage';
+import MyReviewsPage from './pages/MyReviewsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { GuestRoute } from './components/auth/GuestRoute';
 
@@ -34,6 +35,8 @@ function App() {
           {/* Pages that need a signed-in user go inside, e.g.
               <Route path="/watchlist" element={<WatchlistPage />} /> */}
           <Route element={<ProtectedRoute />}>
+            {/* Private: the member's own reviews ("Your reviews" in the profile menu). */}
+            <Route path="/reviews" element={<MyReviewsPage />} />
           </Route>
           {/* Catch-all: React Router ranks routes by specificity, so "*" only wins when nothing else matches */}
           <Route path="*" element={<NotFoundPage />} />
